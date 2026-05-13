@@ -21,9 +21,10 @@ DIRECTSLAVE_BASE_URL=https://directslave.com/download
 
 # MD5 checksum for verification (RECOMMENDED for security)
 # Find the MD5 hash on the DirectSlave download page: https://directslave.com/download
-# Example format: DIRECTSLAVE_MD5=abc123def456...
 # Leave empty to skip verification (not recommended for production)
-DIRECTSLAVE_MD5=
+#
+# Current version (3.5.1-advanced-all) MD5:
+DIRECTSLAVE_MD5=b0ac9946aa2780138cd625663739840a
 
 ###########################################
 # How to Use These Build Arguments

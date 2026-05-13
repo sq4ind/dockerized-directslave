@@ -517,6 +517,10 @@ chmod 600 .env
 # Never commit sensitive values
 ```
 
+### Third-Party Software Notice
+
+This project downloads and packages DirectSlave (BSD License, copyright Roman Mazur, 2012-2022) from https://directslave.com. We verify binary integrity via MD5 checksum but do **not** take responsibility for DirectSlave's security or functionality. See the [Disclaimer](#disclaimer---third-party-software) section for details.
+
 ## Upgrading
 
 ### DirectSlave Version Management
@@ -743,14 +747,58 @@ Contributions are welcome! Please:
 
 ## License
 
-This Docker implementation is provided under the terms specified in the LICENSE file.
+- **This Docker project**: MIT License (see [LICENSE](LICENSE) file)
+- **DirectSlave software**: BSD License (copyright Roman Mazur, 2012-2022)
 
-DirectSlave itself is copyright Roman Mazur (http://mazur.net.ua/).
+## Disclaimer - Third-Party Software
+
+### DirectSlave Binary
+
+This project includes DirectSlave software downloaded directly from https://directslave.com
+
+**DirectSlave Details:**
+
+| Field | Value |
+|-------|-------|
+| License | BSD License |
+| Copyright | Roman Mazur, 2012-2022 |
+| Source | https://directslave.com |
+| Contact | roman.mazur@gmail.com |
+| Current Version | 3.5.1 |
+| MD5 (tar.gz) | `b0ac9946aa2780138cd625663739840a` |
+
+**This Docker project:**
+- Downloads DirectSlave from the official source
+- Verifies binary integrity using MD5 checksums (see Dockerfile)
+- Packages DirectSlave into a Docker container for easier deployment
+- Does **NOT** modify the DirectSlave binary or source code
+- Does **NOT** take responsibility for DirectSlave's security or functionality
+- Does **NOT** warrant DirectSlave's suitability for any particular use case
+
+**Your Responsibility:**
+
+Users are responsible for:
+1. **Security Assessment** - Reviewing DirectSlave's security posture independently
+2. **Updates** - Keeping DirectSlave updated when new versions are released
+3. **License Compliance** - Understanding and complying with DirectSlave's BSD License
+4. **Suitability** - Assessing whether DirectSlave meets your security and operational requirements
+5. **Issue Reporting** - Reporting DirectSlave bugs to Roman Mazur (roman.mazur@gmail.com), not this project
+
+### Security Scanning Notes
+
+Trivy vulnerability scans are suppressed for DirectSlave binaries (see `.trivyignore`).
+This does **not** mean the binaries are vulnerability-free. Scans are suppressed because:
+1. DirectSlave is a third-party closed-source binary
+2. Trivy cannot analyze it effectively without source code
+3. Binary verification via MD5 checksum is our integrity measure
+
+You should **independently verify** DirectSlave's security before using in production.
+See [.github/SECURITY.md](.github/SECURITY.md) for full security policy.
 
 ## Credits
 
 - **DirectSlave**: Roman Mazur (roman.mazur@gmail.com)
-- **Docker Implementation**: [Your Name/Organization]
+- **Docker Implementation**: sq4ind
 - **BIND**: ISC (Internet Systems Consortium)
 - **Certbot**: Electronic Frontier Foundation (EFF)
 - **Alpine Linux**: Alpine Linux Development Team

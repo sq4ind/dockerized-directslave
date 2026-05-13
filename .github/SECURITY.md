@@ -88,12 +88,60 @@ gh attestation verify ghcr.io/sq4ind/dockerized-directslave:1.0.0 \
 
 ### Trusted Sources
 
-| Component | Source | Verification |
-|-----------|--------|--------------|
-| Alpine Linux | Docker Hub (official) | Docker Content Trust |
-| DirectSlave | directslave.com | MD5 checksum |
-| BIND | Alpine APK repository | APK signature verification |
-| Certbot | Alpine APK repository | APK signature verification |
+| Component | Source | License | Verification |
+|-----------|--------|---------|--------------|
+| Alpine Linux | Docker Hub (official) | MIT | Docker Content Trust |
+| DirectSlave | directslave.com | BSD License | MD5 checksum |
+| BIND | Alpine APK repository | MPL 2.0 | APK signature verification |
+| Certbot | Alpine APK repository | Apache 2.0 | APK signature verification |
+
+---
+
+## Third-Party Software - DirectSlave Binary
+
+### Trust Model
+
+| Component | Source | License | Responsibility |
+|-----------|--------|---------|----------------|
+| DirectSlave Binary | https://directslave.com | BSD License | Roman Mazur |
+| DirectSlave Docker | This repository | MIT License | sq4ind |
+
+### DirectSlave Verification
+
+- **Download Location**: https://directslave.com/download
+- **Current Version**: 3.5.1
+- **MD5 Checksum**: `b0ac9946aa2780138cd625663739840a`
+- **Dockerfile Verification**: MD5 check enabled in builder stage (see `Dockerfile`)
+
+### Why DirectSlave Scans Are Suppressed
+
+Trivy vulnerability scans are suppressed for DirectSlave binaries (see `.trivyignore`) because:
+
+1. DirectSlave is a closed-source pre-compiled Go binary
+2. Trivy cannot analyze binary security without source code access
+3. We verify download integrity via MD5 checksum instead
+4. Users should conduct their own independent security assessment
+
+### Security Responsibility
+
+**What we verify:**
+- Binary integrity (MD5 checksum match during Docker build)
+- Docker image structure and expected files
+- Alpine packages are up-to-date (via Dependabot)
+- Entrypoint and helper scripts (via ShellCheck)
+- Configuration templates are secure
+
+**What you must verify:**
+- DirectSlave's internal security
+- DirectSlave's runtime behavior
+- DirectSlave's suitability for your use case
+- DirectSlave's compliance with your security policies
+
+### Reporting Issues
+
+- **DirectSlave bugs/security**: Contact roman.mazur@gmail.com
+- **Docker packaging issues**: Open a GitHub issue in this repository
+- **Alpine/BIND/Certbot issues**: Report to respective upstream projects
 
 ---
 

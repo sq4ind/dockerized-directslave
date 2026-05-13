@@ -1,0 +1,26 @@
+# ============================================================
+# Trivy Ignore File
+# ============================================================
+# DirectSlave binary files downloaded from https://directslave.com
+# Licensed under BSD License, copyright Roman Mazur, 2012-2022
+#
+# These binaries are verified via MD5 checksum during Docker build.
+# We suppress Trivy scanning because:
+#   1. DirectSlave is a closed-source pre-compiled binary
+#   2. Trivy cannot effectively analyze binary security without source
+#   3. Binary integrity is verified via MD5 checksum in Dockerfile
+#   4. Users should conduct independent security assessment
+#
+# See .github/SECURITY.md for full security policy and trust model.
+# ============================================================
+
+# DirectSlave platform-specific binaries (all included in tar.gz)
+directslave-linux-amd64
+directslave-linux-arm
+directslave-linux-i386
+directslave-freebsd-amd64
+directslave-freebsd-i386
+directslave-macos-amd64
+
+# DirectSlave selected binary (symlinked/copied during build)
+directslave
