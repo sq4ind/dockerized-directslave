@@ -1,0 +1,142 @@
+# DirectSlave Build Arguments
+# These arguments control which version of DirectSlave is downloaded and installed during Docker build
+
+###########################################
+# DirectSlave Version Configuration
+###########################################
+
+# DirectSlave version number
+# Check available versions at: https://directslave.com/download
+DIRECTSLAVE_VERSION=3.5.1
+
+# DirectSlave variant/edition
+# Common variants:
+#   - advanced-all    (Recommended - includes all features)
+#   - standard-all
+#   - basic-all
+DIRECTSLAVE_VARIANT=advanced-all
+
+# Base download URL (usually no need to change)
+DIRECTSLAVE_BASE_URL=https://directslave.com/download
+
+# MD5 checksum for verification (RECOMMENDED for security)
+# Find the MD5 hash on the DirectSlave download page: https://directslave.com/download
+# Example format: DIRECTSLAVE_MD5=abc123def456...
+# Leave empty to skip verification (not recommended for production)
+DIRECTSLAVE_MD5=
+
+###########################################
+# How to Use These Build Arguments
+###########################################
+
+# Method 1: Edit docker-compose.yml (Recommended)
+# ---------------------------------------------
+# Edit the 'args' section under 'build' in docker-compose.yml:
+#
+#   build:
+#     context: .
+#     dockerfile: Dockerfile
+#     args:
+#       DIRECTSLAVE_VERSION: "3.5.1"
+#       DIRECTSLAVE_VARIANT: "advanced-all"
+#       DIRECTSLAVE_MD5: "your-md5-hash-here"
+
+# Method 2: Command line build args
+# ---------------------------------------------
+# Pass arguments directly when building:
+#
+#   docker-compose build \
+#     --build-arg DIRECTSLAVE_VERSION=3.5.1 \
+#     --build-arg DIRECTSLAVE_VARIANT=advanced-all \
+#     --build-arg DIRECTSLAVE_MD5=abc123...
+
+# Method 3: Use .env file (if supported by your Docker setup)
+# ---------------------------------------------
+# Some Docker setups can use .env for build args
+
+###########################################
+# Finding DirectSlave Versions and MD5
+###########################################
+
+# 1. Visit: https://directslave.com/download
+# 2. Look for available versions (e.g., directslave-3.5.1-advanced-all.tar.gz)
+# 3. Find the MD5 hash on the download page
+# 4. Copy the version number (e.g., "3.5.1")
+# 5. Copy the variant (e.g., "advanced-all")
+# 6. Copy the MD5 hash
+
+###########################################
+# Version Change Examples
+###########################################
+
+# Example 1: Update to version 3.6.0
+# DIRECTSLAVE_VERSION=3.6.0
+# DIRECTSLAVE_VARIANT=advanced-all
+# DIRECTSLAVE_MD5=<new-md5-hash>
+
+# Example 2: Use different variant
+# DIRECTSLAVE_VERSION=3.5.1
+# DIRECTSLAVE_VARIANT=standard-all
+# DIRECTSLAVE_MD5=<md5-for-standard>
+
+# Example 3: Custom download location
+# DIRECTSLAVE_VERSION=3.5.1
+# DIRECTSLAVE_VARIANT=advanced-all
+# DIRECTSLAVE_BASE_URL=https://mirror.example.com/directslave
+# DIRECTSLAVE_MD5=<md5-hash>
+
+###########################################
+# Security Notes
+###########################################
+
+# MD5 Verification:
+# - Always use DIRECTSLAVE_MD5 for production builds
+# - Verifies the downloaded file hasn't been tampered with
+# - Build will FAIL if checksum doesn't match (this is good!)
+# - Prevents installation of corrupted or modified files
+
+# Why MD5 and not SHA256?
+# - DirectSlave provides MD5 hashes on their download page
+# - MD5 is sufficient for verifying file integrity
+# - Not used for cryptographic security, just file verification
+
+###########################################
+# Upgrading DirectSlave
+###########################################
+
+# To upgrade DirectSlave to a new version:
+#
+# 1. Stop the container:
+#    docker-compose down
+#
+# 2. Edit docker-compose.yml with new version and MD5
+#
+# 3. Rebuild the image:
+#    docker-compose build --no-cache
+#
+# 4. Start with new version:
+#    docker-compose up -d
+#
+# 5. Verify:
+#    docker logs directslave | grep "DirectSlave"
+#    # Should show new version number
+
+# Note: Your data (configs, zones, certificates) is preserved in volumes
+
+###########################################
+# Troubleshooting
+###########################################
+
+# Build fails with "MD5 checksum verification failed":
+# - Verify you copied the MD5 hash correctly
+# - Check the download URL is correct
+# - Try downloading manually to verify the file
+
+# Build fails with "directslave directory not found":
+# - The version/variant combination may not exist
+# - Check https://directslave.com/download for valid combinations
+# - Verify DIRECTSLAVE_VERSION and DIRECTSLAVE_VARIANT are correct
+
+# Want to skip MD5 verification:
+# - Set DIRECTSLAVE_MD5="" (empty string)
+# - Not recommended for production use

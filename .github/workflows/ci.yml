@@ -1,0 +1,171 @@
+# ============================================================
+# CI/CD Pipeline - Testing & Validation
+# ============================================================
+# Runs on every push and PR to validate:
+#   - Dockerfile best practices (Hadolint)
+#   - Shell script quality (ShellCheck)
+#   - Docker Compose syntax
+#   - Docker build verification
+#   - Security vulnerability scanning (Trivy)
+# ============================================================
+
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # Weekly security scan - every Monday at 06:00 UTC
+    - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # ──────────────────────────────────────────────
+  # Job 1: Lint Dockerfile and Shell Scripts
+  # ──────────────────────────────────────────────
+  lint:
+    name: Lint & Validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Lint Dockerfile with Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          # Treat warnings as info, fail only on errors
+          failure-threshold: error
+          # Ignore DL3018 (pin versions in apk add) - Alpine packages are version-locked by base image
+          ignore: DL3018
+
+      - name: Run ShellCheck on scripts
+        uses: ludeeus/action-shellcheck@2.0.0
+        with:
+          scandir: "."
+          additional_files: "entrypoint.sh"
+          severity: warning
+        env:
+          SHELLCHECK_OPTS: "--exclude=SC1091"
+
+      - name: Validate docker-compose.yml
+        run: docker compose -f docker-compose.yml config --quiet
+
+  # ──────────────────────────────────────────────
+  # Job 2: Build Docker Image (multi-platform)
+  # ──────────────────────────────────────────────
+  build:
+    name: Build & Verify
+    runs-on: ubuntu-latest
+    needs: lint
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU (for multi-platform)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image (amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: directslave-test:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Docker image (arm64 - verify only)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/arm64
+          push: false
+          tags: directslave-test:ci-arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify image structure
+        run: |
+          echo "=== Image details ==="
+          docker image inspect directslave-test:ci --format '{{.Os}}/{{.Architecture}}'
+          docker image inspect directslave-test:ci --format 'Size: {{.Size}}'
+
+          echo ""
+          echo "=== Image layers ==="
+          docker history directslave-test:ci --no-trunc --format "{{.CreatedBy}}" | head -20
+
+          echo ""
+          echo "=== Verify entrypoint exists ==="
+          docker run --rm --entrypoint="" directslave-test:ci test -f /entrypoint.sh && echo "OK: entrypoint.sh exists"
+
+          echo ""
+          echo "=== Verify DirectSlave binary ==="
+          docker run --rm --entrypoint="" directslave-test:ci test -x /usr/local/directslave/bin/directslave && echo "OK: directslave binary is executable"
+
+          echo ""
+          echo "=== Verify required packages ==="
+          docker run --rm --entrypoint="" directslave-test:ci sh -c "which named && which certbot && which curl && which rndc" && echo "OK: all required packages present"
+
+  # ──────────────────────────────────────────────
+  # Job 3: Security Scanning with Trivy
+  # ──────────────────────────────────────────────
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image for scanning
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: directslave-test:scan
+          cache-from: type=gha
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "directslave-test:scan"
+          format: "sarif"
+          output: "trivy-results.sarif"
+          severity: "CRITICAL,HIGH"
+          # Don't fail on vulnerabilities in scheduled scans (informational)
+          exit-code: ${{ github.event_name == 'schedule' && '0' || '1' }}
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-results.sarif"
+
+      - name: Run Trivy (table output for PR comments)
+        uses: aquasecurity/trivy-action@0.28.0
+        if: always()
+        with:
+          image-ref: "directslave-test:scan"
+          format: "table"
+          severity: "CRITICAL,HIGH,MEDIUM"

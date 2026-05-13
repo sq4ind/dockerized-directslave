@@ -1,0 +1,55 @@
+# ============================================================
+# Auto-merge Dependabot PRs
+# ============================================================
+# Automatically merges Dependabot PRs when:
+#   - CI checks pass
+#   - Update is patch or minor version
+#   - PR is from Dependabot
+# ============================================================
+
+name: Auto-merge Dependabot
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    name: Auto-merge Dependabot PRs
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Approve PR (patch and minor updates)
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+        run: gh pr review --approve "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Enable auto-merge (patch and minor updates)
+        if: steps.metadata.outputs.update-type != 'version-update:semver-major'
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log major version update (requires manual review)
+        if: steps.metadata.outputs.update-type == 'version-update:semver-major'
+        run: |
+          echo "::warning::Major version update detected for ${{ steps.metadata.outputs.dependency-names }}"
+          echo "This PR requires manual review before merging."
+          echo ""
+          echo "Update type: ${{ steps.metadata.outputs.update-type }}"
+          echo "From: ${{ steps.metadata.outputs.previous-version }}"
+          echo "To: ${{ steps.metadata.outputs.new-version }}"

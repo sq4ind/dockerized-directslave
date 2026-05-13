@@ -1,0 +1,46 @@
+# DirectSlave Configuration File
+# Generated from environment variables via Docker
+
+# Daemon settings
+background ${DS_BACKGROUND}
+
+# Network binding
+host ${DS_HOST}
+port ${DS_PORT}
+sslport ${DS_SSLPORT}
+
+# SSL/TLS configuration
+ssl ${DS_SSL}
+ssl_cert ${SSL_CERT_PATH}
+ssl_key ${SSL_KEY_PATH}
+
+# Session and authentication
+cookie_sess_id DS_SESSID
+cookie_auth_key ${DS_AUTH_KEY}
+
+# Debug mode
+debug ${DS_DEBUG}
+
+# User and group IDs
+uid ${DS_UID}
+gid ${DS_GID}
+
+# Process and log files
+pid /usr/local/directslave/run/directslave.pid
+access_log /usr/local/directslave/log/access.log
+error_log /usr/local/directslave/log/error.log
+action_log /usr/local/directslave/log/action.log
+
+# DNS zone configuration
+named_workdir ${NAMED_WORKDIR}
+named_conf ${BIND_CONF_PATH}
+retry_time ${RETRY_TIME}
+
+# RNDC configuration
+rndc_path ${RNDC_PATH}
+
+# Named zone file format (text or binary)
+named_format ${NAMED_FORMAT}
+
+# Authentication file
+authfile /usr/local/directslave/etc/passwd

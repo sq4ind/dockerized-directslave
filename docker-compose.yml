@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  directslave:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # DirectSlave version configuration
+      # Change these to use different versions
+      args:
+        DIRECTSLAVE_VERSION: "3.5.1"
+        DIRECTSLAVE_VARIANT: "advanced-all"
+        DIRECTSLAVE_BASE_URL: "https://directslave.com/download"
+        # Optional: MD5 checksum for verification (recommended for security)
+        # Get from: https://directslave.com/download
+        # Example: DIRECTSLAVE_MD5: "abc123def456..."
+        DIRECTSLAVE_MD5: ""
+    container_name: directslave
+    hostname: directslave
+    
+    # Load environment variables from .env file
+    env_file: .env
+    
+    # Additional environment variables can be set here
+    environment:
+      - TZ=UTC
+    
+    # Volume mounts for persistent data
+    volumes:
+      # DirectSlave configuration and authentication
+      - directslave_config:/usr/local/directslave/etc
+      
+      # DirectSlave logs
+      - directslave_logs:/usr/local/directslave/log
+      
+      # DNS zone files
+      - directslave_zones:/etc/namedb/secondary
+      
+      # Let's Encrypt SSL certificates (persistent across restarts)
+      - letsencrypt:/etc/letsencrypt
+      
+      # Optional: Mount custom SSL certificates
+      # - ./ssl:/usr/local/directslave/ssl:ro
+      
+      # Optional: Mount custom scripts
+      # - ./custom-scripts:/usr/local/directslave/scripts:ro
+    
+    # Port mappings
+    ports:
+      # DirectSlave HTTP interface
+      - "2222:2222"
+      
+      # DirectSlave HTTPS interface
+      - "2224:2224"
+      
+      # DNS service (UDP and TCP)
+      - "53:53/udp"
+      - "53:53/tcp"
+      
+      # HTTP port for Let's Encrypt validation
+      # Only needed during certificate generation/renewal
+      - "80:80"
+    
+    # Network configuration
+    networks:
+      - directslave_net
+    
+    # Restart policy
+    restart: unless-stopped
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2222/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    # Resource limits (optional, adjust as needed)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1.0'
+    #       memory: 512M
+    #     reservations:
+    #       cpus: '0.5'
+    #       memory: 256M
+    
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+# Named volumes for data persistence
+volumes:
+  directslave_config:
+    driver: local
+  directslave_logs:
+    driver: local
+  directslave_zones:
+    driver: local
+  letsencrypt:
+    driver: local
+
+# Network configuration
+networks:
+  directslave_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16

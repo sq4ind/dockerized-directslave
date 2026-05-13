@@ -1,0 +1,55 @@
+# ============================================================
+# Dependabot Configuration
+# ============================================================
+# Monitors:
+#   - Docker base images (Alpine 3.x - patch/minor only)
+#   - GitHub Actions versions
+# Policy:
+#   - Auto-merge patch/minor updates when CI passes
+#   - Block major version upgrades (require manual review)
+# ============================================================
+
+version: 2
+
+updates:
+  # ──────────────────────────────────────────────
+  # Docker base image updates (Alpine)
+  # ──────────────────────────────────────────────
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    commit-message:
+      prefix: "docker"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "auto-merge"
+    # Block major version upgrades (Alpine 3.x -> 4.x)
+    ignore:
+      - dependency-name: "alpine"
+        update-types: ["version-update:semver-major"]
+    open-pull-requests-limit: 5
+
+  # ──────────────────────────────────────────────
+  # GitHub Actions version updates
+  # ──────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "auto-merge"
+    open-pull-requests-limit: 10

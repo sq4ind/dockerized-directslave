@@ -1,0 +1,52 @@
+// BIND Named Configuration Template
+// This file is managed by DirectSlave
+// Zone entries will be automatically added/removed
+
+options {
+    directory "${NAMED_WORKDIR}";
+    pid-file "/var/run/named/named.pid";
+    
+    // Listen on all interfaces
+    listen-on { any; };
+    listen-on-v6 { any; };
+    
+    // Allow queries from anyone (this is a slave/secondary server)
+    allow-query { any; };
+    
+    // Don't allow zone transfers (we receive from master)
+    allow-transfer { none; };
+    
+    // No recursion (authoritative only)
+    recursion no;
+    
+    // DNSSEC validation
+    dnssec-validation no;
+    
+    // Version privacy
+    version none;
+};
+
+// RNDC control
+include "/etc/bind/rndc.key";
+
+controls {
+    inet 127.0.0.1 port 953 allow { localhost; } keys { "rndc-key"; };
+};
+
+// Logging
+logging {
+    channel default_log {
+        file "/var/log/named/named.log" versions 3 size 5m;
+        severity info;
+        print-time yes;
+        print-severity yes;
+        print-category yes;
+    };
+    
+    category default { default_log; };
+    category general { default_log; };
+    category queries { default_log; };
+};
+
+// DirectSlave will add zone entries below this line
+// DO NOT EDIT MANUALLY

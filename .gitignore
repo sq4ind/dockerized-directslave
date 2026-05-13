@@ -1,0 +1,92 @@
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+*.log.*
+
+# Docker volumes (if mounted locally)
+volumes/
+data/
+
+# SSL certificates (if stored locally)
+ssl/*.key
+ssl/*.pem
+ssl/*.crt
+ssl/*.p12
+ssl/*.pfx
+
+# Backup files
+backup/
+*.backup
+*.bak
+*.old
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.project
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# Python (if any scripts added)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Node (if any tools added)
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Docker (keep .dockerignore tracked - it's needed for builds)
+# .dockerignore
+
+# Git
+*.orig
+*.rej
+
+# Documentation build
+site/
+_site/
+
+# Keep directory structure but ignore contents
+!.gitkeep
