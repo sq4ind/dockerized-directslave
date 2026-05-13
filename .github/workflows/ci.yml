@@ -40,8 +40,8 @@ jobs:
         uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: Dockerfile
-          # Treat warnings as info, fail only on errors
-          failure-threshold: error
+          # Fail on warnings and above (treat info as non-blocking)
+          failure-threshold: warning
           # Ignore DL3018 (pin versions in apk add) - Alpine packages are version-locked by base image
           ignore: DL3018
 

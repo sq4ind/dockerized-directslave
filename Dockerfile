@@ -18,15 +18,19 @@ ARG DIRECTSLAVE_MD5=""
 # ============================================================
 FROM alpine:3.23 AS builder
 
+# Use ash with pipefail to catch pipe errors (fixes DL4006, SC3009)
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+
 ARG DIRECTSLAVE_VERSION
 ARG DIRECTSLAVE_VARIANT
 ARG DIRECTSLAVE_BASE_URL
 ARG DIRECTSLAVE_MD5
 
-RUN apk add --no-cache curl tar \
-    && mkdir -p /build \
-    && cd /build \
-    && DOWNLOAD_URL="${DIRECTSLAVE_BASE_URL}/directslave-${DIRECTSLAVE_VERSION}-${DIRECTSLAVE_VARIANT}.tar.gz" \
+RUN apk add --no-cache curl tar
+
+WORKDIR /build
+
+RUN DOWNLOAD_URL="${DIRECTSLAVE_BASE_URL}/directslave-${DIRECTSLAVE_VERSION}-${DIRECTSLAVE_VARIANT}.tar.gz" \
     && echo "-> Downloading DirectSlave ${DIRECTSLAVE_VERSION}-${DIRECTSLAVE_VARIANT}..." \
     && curl -fSL -o directslave.tar.gz "${DOWNLOAD_URL}" \
     && if [ -n "${DIRECTSLAVE_MD5}" ]; then \
@@ -50,6 +54,9 @@ RUN apk add --no-cache curl tar \
 # ============================================================
 FROM alpine:3.23
 
+# Use ash with pipefail to catch pipe errors (fixes DL4006, SC3009)
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+
 LABEL maintainer="DirectSlave Docker Project"
 LABEL description="DirectSlave DNS server with BIND and automatic SSL via Certbot"
 LABEL version="1.0"
@@ -68,7 +75,13 @@ RUN apk add --no-cache \
     && addgroup -g 53 -S bind 2>/dev/null || true \
     && adduser -u 53 -D -S -H -G bind bind 2>/dev/null || true \
     && mkdir -p \
-      /usr/local/directslave/{bin,etc,log,run,scripts,ssl,www} \
+      /usr/local/directslave/bin \
+      /usr/local/directslave/etc \
+      /usr/local/directslave/log \
+      /usr/local/directslave/run \
+      /usr/local/directslave/scripts \
+      /usr/local/directslave/ssl \
+      /usr/local/directslave/www \
       /etc/namedb/secondary \
       /var/run/named \
       /var/cache/bind \
