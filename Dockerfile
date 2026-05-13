@@ -21,6 +21,8 @@ FROM alpine:3.23 AS builder
 # Use ash with pipefail to catch pipe errors (fixes DL4006, SC3009)
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
+# TARGETARCH is automatically set by Docker BuildKit (amd64, arm64, etc.)
+ARG TARGETARCH
 ARG DIRECTSLAVE_VERSION
 ARG DIRECTSLAVE_VARIANT
 ARG DIRECTSLAVE_BASE_URL
@@ -30,6 +32,7 @@ RUN apk add --no-cache curl tar
 
 WORKDIR /build
 
+# Download, verify, extract, and select platform-specific binary
 RUN DOWNLOAD_URL="${DIRECTSLAVE_BASE_URL}/directslave-${DIRECTSLAVE_VERSION}-${DIRECTSLAVE_VARIANT}.tar.gz" \
     && echo "-> Downloading DirectSlave ${DIRECTSLAVE_VERSION}-${DIRECTSLAVE_VARIANT}..." \
     && curl -fSL -o directslave.tar.gz "${DOWNLOAD_URL}" \
@@ -46,7 +49,25 @@ RUN DOWNLOAD_URL="${DIRECTSLAVE_BASE_URL}/directslave-${DIRECTSLAVE_VERSION}-${D
     && echo "-> Extracting..." \
     && tar -xzf directslave.tar.gz \
     && rm -f directslave.tar.gz \
-    && echo "-> DirectSlave ${DIRECTSLAVE_VERSION} ready"
+    && echo "-> Selecting binary for architecture: ${TARGETARCH}" \
+    && case "${TARGETARCH}" in \
+         amd64) BINARY="directslave-linux-amd64" ;; \
+         arm64) BINARY="directslave-linux-arm" ;; \
+         *)     echo "ERROR: Unsupported architecture: ${TARGETARCH}" ; \
+                echo "Supported: amd64, arm64" ; \
+                echo "Available binaries:" ; \
+                ls -la /build/directslave/bin/ ; \
+                exit 1 ;; \
+       esac \
+    && test -f "/build/directslave/bin/${BINARY}" || { \
+         echo "ERROR: Binary not found: /build/directslave/bin/${BINARY}" ; \
+         echo "Available binaries:" ; \
+         ls -la /build/directslave/bin/ ; \
+         exit 1 ; \
+       } \
+    && cp "/build/directslave/bin/${BINARY}" /build/directslave/bin/directslave \
+    && chmod +x /build/directslave/bin/directslave \
+    && echo "-> DirectSlave ${DIRECTSLAVE_VERSION} ready (${TARGETARCH}: ${BINARY})"
 
 # ============================================================
 # STAGE 2: RUNTIME
@@ -89,8 +110,8 @@ RUN apk add --no-cache \
       /var/lib/letsencrypt \
       /var/log/named
 
-# Copy only needed DirectSlave files from builder (skip rc.d/, log/)
-COPY --from=builder /build/directslave/bin/       /usr/local/directslave/bin/
+# Copy only the selected DirectSlave binary from builder (platform-specific)
+COPY --from=builder /build/directslave/bin/directslave /usr/local/directslave/bin/directslave
 COPY --from=builder /build/directslave/etc/       /usr/local/directslave/etc/
 COPY --from=builder /build/directslave/www/       /usr/local/directslave/www/
 COPY --from=builder /build/directslave/scripts/   /usr/local/directslave/scripts/
