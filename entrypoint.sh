@@ -213,6 +213,8 @@ if [ ! -f "/etc/bind/named.conf" ]; then
     # Update listen addresses to bind on all interfaces (required for a slave DNS server)
     sed -i 's/listen-on { 127.0.0.1; };/listen-on { any; };/' /etc/bind/named.conf
     sed -i 's/listen-on-v6 { none; };/listen-on-v6 { any; };/' /etc/bind/named.conf
+    # Set working directory to DirectSlave zone storage
+    sed -i 's|directory "/var/bind"|directory "/etc/namedb/secondary"|' /etc/bind/named.conf
 fi
 
 # Add rndc key include if not already present
@@ -239,6 +241,13 @@ if [ ! -f "/etc/namedb/secondary/named.conf" ]; then
     touch /etc/namedb/secondary/named.conf
     chown bind:bind /etc/namedb/secondary/named.conf
 fi
+
+# Set proper ownership and permissions for BIND to read its configuration
+chown bind:bind /etc/bind/named.conf
+chmod 644 /etc/bind/named.conf
+chmod 755 /etc/bind
+chown bind:bind /etc/bind/rndc.key
+chmod 640 /etc/bind/rndc.key
 
 # Validate BIND configuration
 log_info "Validating BIND configuration..."
