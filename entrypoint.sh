@@ -320,6 +320,5 @@ if [ "$DS_DEBUG" = "1" ]; then
     exec /usr/local/directslave/bin/directslave --debug
 else
     log_info "Starting DirectSlave in normal mode..."
-    # Run in foreground for Docker
-    exec /usr/local/directslave/bin/directslave --foreground
+    exec /usr/local/directslave/bin/directslave --run
 fi
