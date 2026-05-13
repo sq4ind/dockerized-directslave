@@ -206,75 +206,38 @@ log_info "DirectSlave configuration generated at /usr/local/directslave/etc/dire
 ###########################################
 log_info "Setting up BIND (named)..."
 
-# Generate rndc key if it doesn't exist
-if [ ! -f "/etc/bind/rndc.key" ]; then
-    log_info "Generating rndc key..."
-    mkdir -p /etc/bind
-    rndc-confgen -a -c /etc/bind/rndc.key
-    chown bind:bind /etc/bind/rndc.key
-    chmod 640 /etc/bind/rndc.key
-fi
-
-# Create named.conf if it doesn't exist or use template
-if [ ! -f "${BIND_CONF_PATH}" ]; then
-    log_info "Creating BIND configuration..."
-    if [ -f "/etc/namedb/secondary/named.conf.template" ]; then
-        envsubst < /etc/namedb/secondary/named.conf.template > "${BIND_CONF_PATH}"
-    else
-        # Create minimal named.conf
-        cat > "${BIND_CONF_PATH}" << EOF
-// DirectSlave managed zones
-// This file is automatically managed by DirectSlave
-// Do not edit manually
-
-options {
-    directory "${NAMED_WORKDIR}";
-    pid-file "/var/run/named/named.pid";
-};
-
-include "/etc/bind/rndc.key";
-
-controls {
-    inet 127.0.0.1 port 953 allow { localhost; } keys { "rndc-key"; };
-};
-
-// Zone entries will be added here by DirectSlave
-EOF
-    fi
-    chown bind:bind "${BIND_CONF_PATH}"
-fi
-
-# Create main named.conf if needed
+# Create /etc/bind/named.conf from Alpine's authoritative template if it doesn't exist
 if [ ! -f "/etc/bind/named.conf" ]; then
-    log_info "Creating main BIND configuration..."
-    mkdir -p /etc/bind
-    cat > /etc/bind/named.conf << EOF
-// Main BIND configuration
-include "/etc/bind/rndc.key";
+    log_info "Creating BIND configuration from Alpine authoritative template..."
+    cp /etc/bind/named.conf.authoritative /etc/bind/named.conf
+    # Update listen addresses to bind on all interfaces (required for a slave DNS server)
+    sed -i 's/listen-on { 127.0.0.1; };/listen-on { any; };/' /etc/bind/named.conf
+    sed -i 's/listen-on-v6 { none; };/listen-on-v6 { any; };/' /etc/bind/named.conf
+fi
 
-options {
-    directory "${NAMED_WORKDIR}";
-    pid-file "/var/run/named/named.pid";
-    
-    listen-on { any; };
-    listen-on-v6 { any; };
-    
-    allow-query { any; };
-    allow-transfer { none; };
-    
-    recursion no;
-    
-    dnssec-validation no;
-};
+# Add rndc key include if not already present
+if ! grep -q 'include "/etc/bind/rndc.key"' /etc/bind/named.conf 2>/dev/null; then
+    log_info "Adding rndc key include to BIND configuration..."
+    printf '\n// RNDC key for remote control\ninclude "/etc/bind/rndc.key";\n' >> /etc/bind/named.conf
+fi
 
-controls {
-    inet 127.0.0.1 port 953 allow { localhost; } keys { "rndc-key"; };
-};
+# Add controls block if not already present
+if ! grep -q 'controls {' /etc/bind/named.conf 2>/dev/null; then
+    log_info "Adding controls block to BIND configuration..."
+    printf '\ncontrols {\n    inet 127.0.0.1 port 953 allow { localhost; } keys { "rndc-key"; };\n};\n' >> /etc/bind/named.conf
+fi
 
-// Include DirectSlave managed zones
-include "${BIND_CONF_PATH}";
-EOF
-    chown bind:bind /etc/bind/named.conf
+# Add DirectSlave zones include if not already present
+if ! grep -q 'include "/etc/namedb/secondary/named.conf"' /etc/bind/named.conf 2>/dev/null; then
+    log_info "Adding DirectSlave zones include to BIND configuration..."
+    printf '\n// Include DirectSlave managed zones\ninclude "/etc/namedb/secondary/named.conf";\n' >> /etc/bind/named.conf
+fi
+
+# Create empty DirectSlave zones file if it doesn't exist yet
+# DirectSlave will manage this file, but BIND needs it to exist at startup
+if [ ! -f "/etc/namedb/secondary/named.conf" ]; then
+    touch /etc/namedb/secondary/named.conf
+    chown bind:bind /etc/namedb/secondary/named.conf
 fi
 
 # Validate BIND configuration

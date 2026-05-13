@@ -118,7 +118,6 @@ COPY --from=builder /build/directslave/scripts/   /usr/local/directslave/scripts
 
 # Copy local configuration templates and scripts
 COPY config/directslave.conf.template /usr/local/directslave/etc/directslave.conf.template
-COPY config/named.conf.template /etc/namedb/secondary/named.conf.template
 COPY scripts/cert-renewal-hook.sh /usr/local/bin/cert-renewal-hook.sh
 COPY scripts/validate-config.sh /usr/local/bin/validate-config.sh
 COPY entrypoint.sh /entrypoint.sh
