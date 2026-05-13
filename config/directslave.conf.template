@@ -1,9 +1,6 @@
 # DirectSlave Configuration File
 # Generated from environment variables via Docker
 
-# Daemon settings
-background ${DS_BACKGROUND}
-
 # Network binding
 host ${DS_HOST}
 port ${DS_PORT}
@@ -17,9 +14,6 @@ ssl_key ${SSL_KEY_PATH}
 # Session and authentication
 cookie_sess_id DS_SESSID
 cookie_auth_key ${DS_AUTH_KEY}
-
-# Debug mode
-debug ${DS_DEBUG}
 
 # User and group IDs
 uid ${DS_UID}

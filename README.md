@@ -109,8 +109,6 @@ docker run -d \
   -e DS_PORT="2222" \
   -e DS_SSLPORT="2224" \
   -e DS_SSL="on" \
-  -e DS_DEBUG="0" \
-  -e DS_BACKGROUND="1" \
   -e DS_AUTH_KEY="YOUR_128_CHAR_RANDOM_KEY_HERE" \
   -e CERTBOT_ENABLED="true" \
   -e CERTBOT_EMAIL="admin@yourdomain.com" \
@@ -164,8 +162,6 @@ See [docs/DIRECTADMIN_SETUP.md](docs/DIRECTADMIN_SETUP.md) for detailed DirectAd
 | `DS_PORT` | No | `2222` | `2222` | DirectSlave HTTP port |
 | `DS_SSLPORT` | No | `2224` | `2224` | DirectSlave HTTPS port |
 | `DS_SSL` | No | `on` | `on` | Enable SSL (`on`/`off`) |
-| `DS_DEBUG` | No | `0` | `0` | Debug mode (`0`=off, `1`=on) |
-| `DS_BACKGROUND` | No | `1` | `1` | Background mode (managed by entrypoint) |
 | `DS_AUTH_KEY` | **Yes** | — | `k8Tj2m...` (128+ chars) | Cookie encryption key for web interface sessions |
 | `CERTBOT_ENABLED` | No | `true` | `true` | Enable automatic SSL via Let's Encrypt |
 | `CERTBOT_EMAIL` | **Yes*** | — | `admin@yourdomain.com` | Email for Let's Encrypt notifications |

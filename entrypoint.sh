@@ -25,6 +25,22 @@ log_error() {
     printf '%b\n' "${RED}[ERROR]${NC} $1"
 }
 
+# Copy certificates to /usr/local/directslave/ssl/ and set permissions
+setup_cert_permissions() {
+    log_info "Setting up certificate permissions for bind user..."
+    # Ensure DirectSlave SSL directory has correct ownership
+    chown bind:bind /usr/local/directslave/ssl 2>/dev/null || true
+    # If certificates exist in DirectSlave SSL dir, set proper permissions
+    if [ -f "/usr/local/directslave/ssl/server.crt" ]; then
+        chmod 644 /usr/local/directslave/ssl/server.crt
+        chown bind:bind /usr/local/directslave/ssl/server.crt
+    fi
+    if [ -f "/usr/local/directslave/ssl/server.key" ]; then
+        chmod 640 /usr/local/directslave/ssl/server.key
+        chown bind:bind /usr/local/directslave/ssl/server.key
+    fi
+}
+
 ###########################################
 # 1. INITIALIZATION PHASE
 ###########################################
@@ -35,8 +51,7 @@ export DS_HOST="${DS_HOST:-*}"
 export DS_PORT="${DS_PORT:-2222}"
 export DS_SSLPORT="${DS_SSLPORT:-2224}"
 export DS_SSL="${DS_SSL:-on}"
-export DS_DEBUG="${DS_DEBUG:-0}"
-export DS_BACKGROUND="${DS_BACKGROUND:-1}"
+
 export DS_UID="${DS_UID:-53}"
 export DS_GID="${DS_GID:-53}"
 export NAMED_WORKDIR="${NAMED_WORKDIR:-/etc/namedb/secondary}"
@@ -74,6 +89,9 @@ chown -R bind:bind /usr/local/directslave
 chown -R bind:bind "${NAMED_WORKDIR}"
 chown -R bind:bind /var/run/named
 chown -R bind:bind /var/cache/bind
+
+# Set up certificate permissions (for any pre-existing manual certs)
+setup_cert_permissions
 
 # Verify DirectSlave binary exists
 if [ ! -f "/usr/local/directslave/bin/directslave" ]; then
@@ -150,6 +168,15 @@ if [ "$CERTBOT_ENABLED" = "true" ]; then
         echo "0 3 * * * certbot renew --quiet --deploy-hook /usr/local/bin/cert-renewal-hook.sh" | crontab -
         crond -b -l 8
         log_info "Cron daemon started for certificate auto-renewal"
+        
+        # Copy certificates to DirectSlave SSL directory for consistent access
+        log_info "Copying certificates to /usr/local/directslave/ssl/..."
+        cp "$CERT_PATH" /usr/local/directslave/ssl/server.crt
+        cp "$KEY_PATH" /usr/local/directslave/ssl/server.key
+        CERT_PATH="/usr/local/directslave/ssl/server.crt"
+        KEY_PATH="/usr/local/directslave/ssl/server.key"
+        setup_cert_permissions
+        log_info "Certificates installed at /usr/local/directslave/ssl/"
     fi
 else
     log_info "Certbot is disabled. Checking for manual SSL certificates..."
@@ -159,6 +186,7 @@ else
         log_info "Manual SSL certificates found in /usr/local/directslave/ssl/"
         CERT_PATH="/usr/local/directslave/ssl/server.crt"
         KEY_PATH="/usr/local/directslave/ssl/server.key"
+        setup_cert_permissions
     else
         log_warn "No SSL certificates found. SSL will be disabled."
         export DS_SSL="off"
@@ -314,11 +342,5 @@ shutdown() {
 # Trap signals for graceful shutdown
 trap shutdown TERM INT
 
-# Start DirectSlave in foreground (so Docker can capture logs)
-if [ "$DS_DEBUG" = "1" ]; then
-    log_info "Starting DirectSlave in debug mode..."
-    exec /usr/local/directslave/bin/directslave --debug
-else
-    log_info "Starting DirectSlave in normal mode..."
-    exec /usr/local/directslave/bin/directslave --run
-fi
+# Start DirectSlave in foreground (--debug keeps it in foreground for Docker)
+exec /usr/local/directslave/bin/directslave --debug
