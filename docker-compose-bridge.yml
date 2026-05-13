@@ -15,7 +15,6 @@
 #   - Source IP may appear as gateway IP inside container
 #
 # Usage:
-#   docker compose -f docker-compose-bridge.yml build
 #   docker compose -f docker-compose-bridge.yml up -d
 #
 # See docs/DOCKER_COMPOSE_NETWORKING.md for detailed explanation.
@@ -23,16 +22,7 @@
 
 services:
   directslave:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        DIRECTSLAVE_VERSION: "3.5.1"
-        DIRECTSLAVE_VARIANT: "advanced-all"
-        DIRECTSLAVE_BASE_URL: "https://directslave.com/download"
-        # Optional: MD5 checksum for verification (recommended for security)
-        # Get from: https://directslave.com/download
-        DIRECTSLAVE_MD5: ""
+    image: ghcr.io/sq4ind/dockerized-directslave:latest
     container_name: directslave
     hostname: directslave
 
