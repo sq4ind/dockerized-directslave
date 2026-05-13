@@ -14,15 +14,15 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 log_info() {
-    echo -e "${GREEN}[INFO]${NC} $1"
+    printf '%b\n' "${GREEN}[INFO]${NC} $1"
 }
 
 log_warn() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
+    printf '%b\n' "${YELLOW}[WARN]${NC} $1"
 }
 
 log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
+    printf '%b\n' "${RED}[ERROR]${NC} $1"
 }
 
 ###########################################
@@ -56,8 +56,14 @@ fi
 
 # Create necessary directories with proper permissions
 log_info "Creating directory structure..."
-mkdir -p /usr/local/directslave/{bin,etc,log,run,scripts,ssl,www}
-mkdir -p ${NAMED_WORKDIR}
+mkdir -p /usr/local/directslave/bin
+mkdir -p /usr/local/directslave/etc
+mkdir -p /usr/local/directslave/log
+mkdir -p /usr/local/directslave/run
+mkdir -p /usr/local/directslave/scripts
+mkdir -p /usr/local/directslave/ssl
+mkdir -p /usr/local/directslave/www
+mkdir -p "${NAMED_WORKDIR}"
 mkdir -p /etc/letsencrypt
 mkdir -p /var/lib/letsencrypt
 mkdir -p /var/run/named
@@ -65,7 +71,7 @@ mkdir -p /var/cache/bind
 
 # Set ownership
 chown -R bind:bind /usr/local/directslave
-chown -R bind:bind ${NAMED_WORKDIR}
+chown -R bind:bind "${NAMED_WORKDIR}"
 chown -R bind:bind /var/run/named
 chown -R bind:bind /var/cache/bind
 
@@ -213,10 +219,10 @@ fi
 if [ ! -f "${BIND_CONF_PATH}" ]; then
     log_info "Creating BIND configuration..."
     if [ -f "/etc/namedb/secondary/named.conf.template" ]; then
-        envsubst < /etc/namedb/secondary/named.conf.template > ${BIND_CONF_PATH}
+        envsubst < /etc/namedb/secondary/named.conf.template > "${BIND_CONF_PATH}"
     else
         # Create minimal named.conf
-        cat > ${BIND_CONF_PATH} << EOF
+        cat > "${BIND_CONF_PATH}" << EOF
 // DirectSlave managed zones
 // This file is automatically managed by DirectSlave
 // Do not edit manually
@@ -235,7 +241,7 @@ controls {
 // Zone entries will be added here by DirectSlave
 EOF
     fi
-    chown bind:bind ${BIND_CONF_PATH}
+    chown bind:bind "${BIND_CONF_PATH}"
 fi
 
 # Create main named.conf if needed
@@ -334,7 +340,7 @@ shutdown() {
 }
 
 # Trap signals for graceful shutdown
-trap shutdown SIGTERM SIGINT
+trap shutdown TERM INT
 
 # Start DirectSlave in foreground (so Docker can capture logs)
 if [ "$DS_DEBUG" = "1" ]; then
