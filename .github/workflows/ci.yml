@@ -55,7 +55,9 @@ jobs:
           SHELLCHECK_OPTS: "--exclude=SC1091"
 
       - name: Validate docker-compose.yml
-        run: docker compose --env-file .env.ci -f docker-compose.yml config --quiet
+        run: |
+          cp .env.ci .env
+          docker compose -f docker-compose.yml config --quiet
 
   # ──────────────────────────────────────────────
   # Job 2: Build Docker Image (multi-platform)
