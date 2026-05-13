@@ -42,6 +42,47 @@ DirectSlave is a fast and easy slave DNS management system designed to work with
     └───────────┘   └───────────┘
 ```
 
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Networking Guide](docs/DOCKER_COMPOSE_NETWORKING.md) | Host vs bridge networking modes explained |
+| [SSL/TLS Setup](docs/SSL_SETUP.md) | Certificate management and Let's Encrypt configuration |
+| [DirectAdmin Integration](docs/DIRECTADMIN_SETUP.md) | Connecting DirectSlave to DirectAdmin master |
+| [Deployment Checklist](docs/DEPLOYMENT_CHECKLIST.md) | Step-by-step production deployment guide |
+| [Developer Guide](docs/DEVELOPER.md) | Building, upgrading, CI/CD, and contributing |
+
+## Docker Compose Options
+
+Two networking modes are provided as separate docker-compose files. **Host networking is recommended** for production DNS servers due to superior performance and accurate client IP visibility.
+
+| File | Networking | Use Case |
+|------|-----------|----------|
+| `docker-compose-host.yml` | Host (recommended) | Production - best DNS performance, true client IPs |
+| `docker-compose-bridge.yml` | Bridge | Development, testing, or multi-instance setups |
+
+### Quick Start with Host Networking (Recommended)
+
+```bash
+cp .env.example .env
+# Edit .env with your values (DS_AUTH_KEY, CERTBOT_EMAIL, CERTBOT_DOMAIN)
+
+docker compose -f docker-compose-host.yml build
+docker compose -f docker-compose-host.yml up -d
+```
+
+### Quick Start with Bridge Networking
+
+```bash
+cp .env.example .env
+# Edit .env with your values
+
+docker compose -f docker-compose-bridge.yml build
+docker compose -f docker-compose-bridge.yml up -d
+```
+
+See [docs/DOCKER_COMPOSE_NETWORKING.md](docs/DOCKER_COMPOSE_NETWORKING.md) for a detailed comparison and guidance on choosing a mode.
+
 ## Quick Start
 
 ### Prerequisites
@@ -462,7 +503,10 @@ This project downloads and packages DirectSlave (BSD License, copyright Roman Ma
 
 ### Getting Help
 
-- Check [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+- Check the [Troubleshooting](#troubleshooting) section below
+- Check [docs/SSL_SETUP.md](docs/SSL_SETUP.md) for SSL issues
+- Check [docs/DIRECTADMIN_SETUP.md](docs/DIRECTADMIN_SETUP.md) for integration issues
+- Check [docs/DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md) for deployment guidance
 - Review DirectSlave logs
 - Check Docker container logs
 - Validate configuration
@@ -484,11 +528,11 @@ Contributions are welcome! Please:
 4. Test thoroughly
 5. Submit a pull request
 
-See [DEVELOPER.md](DEVELOPER.md) for build instructions and development workflow.
+See [docs/DEVELOPER.md](docs/DEVELOPER.md) for build instructions and development workflow.
 
 ## For Developers
 
-See [DEVELOPER.md](DEVELOPER.md) for:
+See [docs/DEVELOPER.md](docs/DEVELOPER.md) for:
 - Building the Docker image locally
 - DirectSlave version management & upgrading
 - Performance tuning

@@ -2,7 +2,7 @@
 
 This document covers building, upgrading, and developing the DirectSlave Docker image locally.
 
-For usage instructions, see [README.md](README.md).
+For usage instructions, see [README.md](../README.md).
 
 ## Building the Image Locally
 
@@ -188,7 +188,7 @@ Then create a GitHub Release matching the tag. The publish workflow automaticall
 - **Dependabot** monitors Alpine base image and GitHub Actions weekly
 - Patch/minor security updates are auto-merged after CI passes
 - Major version upgrades require manual review
-- See [.github/SECURITY.md](.github/SECURITY.md) for full security policy
+- See [.github/SECURITY.md](../.github/SECURITY.md) for full security policy
 
 ## Contributing
 
