@@ -47,104 +47,114 @@ DirectSlave is a fast and easy slave DNS management system designed to work with
 ### Prerequisites
 
 - Docker 20.10+
-- Docker Compose 1.29+
 - Domain name pointing to your server
-- Port 53 (DNS), 80 (HTTP), 2222, 2224 accessible
+- Ports 53 (DNS), 80 (HTTP/Let's Encrypt), 2222, 2224 accessible
 
-### 1. Clone and Configure
+### 1. Generate Auth Key
 
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/dockerized-directslave.git
-cd dockerized-directslave
-
-# Copy environment template
-cp .env.example .env
-
-# Edit .env file with your settings
-nano .env
-```
-
-### 2. Critical Configuration
-
-Edit `.env` and set these **required** values:
-
-```bash
-# CRITICAL: Change to a strong random string (128+ chars)
-DS_AUTH_KEY=your-very-long-random-string-here
-
-# Your email for Let's Encrypt notifications
-CERTBOT_EMAIL=admin@yourdomain.com
-
-# Your domain name (must point to this server)
-CERTBOT_DOMAIN=dns.yourdomain.com
-
-# Enable automatic SSL
-CERTBOT_ENABLED=true
-```
-
-Generate a strong auth key:
 ```bash
 openssl rand -base64 96
 ```
 
-### 3. Build and Start
+Save this value - you'll need it for `DS_AUTH_KEY` below.
+
+### 2. Run the Container
 
 ```bash
-# Build and start the container
-docker-compose up -d
-
-# Watch the logs
-docker logs -f directslave
+docker run -d \
+  --name directslave \
+  --hostname directslave \
+  -e DS_HOST="*" \
+  -e DS_PORT="2222" \
+  -e DS_SSLPORT="2224" \
+  -e DS_SSL="on" \
+  -e DS_DEBUG="0" \
+  -e DS_BACKGROUND="1" \
+  -e DS_AUTH_KEY="YOUR_128_CHAR_RANDOM_KEY_HERE" \
+  -e CERTBOT_ENABLED="true" \
+  -e CERTBOT_EMAIL="admin@yourdomain.com" \
+  -e CERTBOT_DOMAIN="dns.yourdomain.com" \
+  -e CERTBOT_METHOD="http" \
+  -e NAMED_WORKDIR="/etc/namedb/secondary" \
+  -e BIND_CONF_PATH="/etc/namedb/secondary/named.conf" \
+  -e RETRY_TIME="1200" \
+  -e RNDC_PATH="/usr/sbin/rndc" \
+  -e NAMED_FORMAT="text" \
+  -e DS_UID="53" \
+  -e DS_GID="53" \
+  -e TZ="UTC" \
+  -v directslave_config:/usr/local/directslave/etc \
+  -v directslave_logs:/usr/local/directslave/log \
+  -v directslave_zones:/etc/namedb/secondary \
+  -v letsencrypt:/etc/letsencrypt \
+  -p 2222:2222 \
+  -p 2224:2224 \
+  -p 53:53/udp \
+  -p 53:53/tcp \
+  -p 80:80 \
+  --restart unless-stopped \
+  ghcr.io/sq4ind/dockerized-directslave:latest
 ```
 
-### 4. Set DirectSlave Password
+### 3. Set DirectSlave Password
 
 ```bash
-# Set authentication credentials for DirectAdmin
 docker exec -it directslave /usr/local/directslave/bin/directslave --password admin:your-secure-password
 ```
 
-### 5. Configure DirectAdmin
+### 4. Configure DirectAdmin
 
-See [DIRECTADMIN_SETUP.md](docs/DIRECTADMIN_SETUP.md) for detailed DirectAdmin configuration.
+1. Login to DirectAdmin
+2. Go to: **Admin Tools** → **MultiServer Setup**
+3. Add server:
+   - Host: `dns.yourdomain.com`
+   - Port: `2222` (or `2224` for HTTPS)
+   - Username: `admin`
+   - Password: the password you set above
+4. Click **Test Connection** → Should show "connection OK"
 
-## Configuration
+See [docs/DIRECTADMIN_SETUP.md](docs/DIRECTADMIN_SETUP.md) for detailed DirectAdmin configuration.
 
-### Environment Variables
+## Environment Variables
 
-All configuration is done via environment variables in `.env` file. See `.env.example` for complete documentation.
+| Variable | Required | Default | Example | Description |
+|----------|----------|---------|---------|-------------|
+| `DS_HOST` | No | `*` | `*` | Bind address (`*` for all interfaces, or specific IP) |
+| `DS_PORT` | No | `2222` | `2222` | DirectSlave HTTP port |
+| `DS_SSLPORT` | No | `2224` | `2224` | DirectSlave HTTPS port |
+| `DS_SSL` | No | `on` | `on` | Enable SSL (`on`/`off`) |
+| `DS_DEBUG` | No | `0` | `0` | Debug mode (`0`=off, `1`=on) |
+| `DS_BACKGROUND` | No | `1` | `1` | Background mode (managed by entrypoint) |
+| `DS_AUTH_KEY` | **Yes** | — | `k8Tj2m...` (128+ chars) | Cookie encryption key for web interface sessions |
+| `CERTBOT_ENABLED` | No | `true` | `true` | Enable automatic SSL via Let's Encrypt |
+| `CERTBOT_EMAIL` | **Yes*** | — | `admin@yourdomain.com` | Email for Let's Encrypt notifications |
+| `CERTBOT_DOMAIN` | **Yes*** | — | `dns.yourdomain.com` | Domain for SSL certificate (must resolve to server) |
+| `CERTBOT_METHOD` | No | `http` | `http` | Validation method (HTTP-01) |
+| `NAMED_WORKDIR` | No | `/etc/namedb/secondary` | `/etc/namedb/secondary` | Directory for DNS zone files |
+| `BIND_CONF_PATH` | No | `/etc/namedb/secondary/named.conf` | `/etc/namedb/secondary/named.conf` | BIND configuration file path |
+| `RETRY_TIME` | No | `1200` | `1200` | Zone retry interval in seconds |
+| `RNDC_PATH` | No | `/usr/sbin/rndc` | `/usr/sbin/rndc` | Path to rndc binary |
+| `NAMED_FORMAT` | No | `text` | `text` | Zone file format (`text`/`binary`) |
+| `DS_UID` | No | `53` | `53` | User ID for DirectSlave/BIND processes |
+| `DS_GID` | No | `53` | `53` | Group ID for DirectSlave/BIND processes |
+| `DIRECTADMIN_IP` | No | — | `192.168.1.100` | Master DirectAdmin server IP (documentation only) |
+| `DIRECTADMIN_PORT` | No | `2222` | `2222` | DirectAdmin API port (documentation only) |
+| `TZ` | No | `UTC` | `America/New_York` | Container timezone |
 
-**Core Settings:**
-- `DS_HOST` - Bind address (* for all)
-- `DS_PORT` - HTTP port (default: 2222)
-- `DS_SSLPORT` - HTTPS port (default: 2224)
-- `DS_SSL` - Enable SSL (on/off)
-- `DS_AUTH_KEY` - **CRITICAL** - Cookie encryption key for DirectSlave web interface (see below)
+> \* Required only when `CERTBOT_ENABLED=true`
 
-**SSL Settings:**
-- `CERTBOT_ENABLED` - Enable auto SSL (true/false)
-- `CERTBOT_EMAIL` - Email for Let's Encrypt
-- `CERTBOT_DOMAIN` - Your domain name
-- `CERTBOT_METHOD` - Validation method (http)
-
-**DNS Settings:**
-- `NAMED_WORKDIR` - Zone file directory
-- `BIND_CONF_PATH` - BIND config path
-- `RETRY_TIME` - Zone retry interval
-
-### Volumes
+## Volumes
 
 Persistent data is stored in named Docker volumes:
 
-| Volume | Purpose | Location |
-|--------|---------|----------|
-| `directslave_config` | Configuration & auth | `/usr/local/directslave/etc` |
-| `directslave_logs` | Application logs | `/usr/local/directslave/log` |
-| `directslave_zones` | DNS zone files | `/etc/namedb/secondary` |
-| `letsencrypt` | SSL certificates | `/etc/letsencrypt` |
+| Volume | Container Path | Purpose |
+|--------|----------------|---------|
+| `directslave_config` | `/usr/local/directslave/etc` | Configuration & authentication |
+| `directslave_logs` | `/usr/local/directslave/log` | Application logs |
+| `directslave_zones` | `/etc/namedb/secondary` | DNS zone files |
+| `letsencrypt` | `/etc/letsencrypt` | SSL certificates |
 
-### Ports
+## Ports
 
 | Port | Protocol | Purpose |
 |------|----------|---------|
@@ -165,9 +175,9 @@ Persistent data is stored in named Docker volumes:
 - Validates user sessions on each request
 
 **Not the same as:**
-- ❌ DirectAdmin API password (set via `--password` command)
-- ❌ SSL certificate key
-- ❌ SSH key
+- DirectAdmin API password (set via `--password` command)
+- SSL certificate key
+- SSH key
 
 ### Why Is It Critical?
 
@@ -175,14 +185,12 @@ Without a strong `DS_AUTH_KEY`:
 - Attackers could forge session cookies
 - Unauthorized access to DirectSlave management
 - Session hijacking possible
-- Security breach risk
 
 ### Requirements
 
 - **Length**: 128+ random characters recommended (64 minimum)
 - **Randomness**: Use cryptographically secure random generator
 - **Uniqueness**: Different for each installation
-- **Characters**: Mix of letters, numbers, and symbols
 
 ### Generate Secure Key
 
@@ -192,16 +200,6 @@ openssl rand -base64 96
 
 # Alternative (generates 64 chars)
 openssl rand -base64 48
-
-# Or use this one-liner
-head -c 96 /dev/urandom | base64
-```
-
-### Configuration
-
-Set in `.env` file:
-```bash
-DS_AUTH_KEY=your-generated-random-string-here-128-chars-minimum
 ```
 
 **Important**: 
@@ -209,24 +207,6 @@ DS_AUTH_KEY=your-generated-random-string-here-128-chars-minimum
 - Keep it secret (don't commit to version control)
 - Change it if compromised
 - Use different keys for dev/staging/production
-
-### How It Works
-
-```
-User → Logs in → DirectSlave validates credentials
-                      ↓
-            Creates encrypted cookie using DS_AUTH_KEY
-                      ↓
-            Cookie sent to browser
-                      ↓
-Browser → Sends cookie with request
-                      ↓
-            DirectSlave decrypts with DS_AUTH_KEY
-                      ↓
-            Validates session → Grants access
-```
-
-If `DS_AUTH_KEY` doesn't match or is weak, session validation fails.
 
 ## SSL Certificate Management
 
@@ -248,41 +228,19 @@ DirectSlave Docker uses Let's Encrypt for automatic SSL certificates via HTTP-01
 
 ### Manual Certificate Management
 
-If you prefer manual certificates:
+If you prefer manual certificates, disable Certbot and mount your own:
 
 ```bash
-# Disable Certbot
-CERTBOT_ENABLED=false
-
-# Mount your certificates
-volumes:
-  - ./ssl/server.crt:/usr/local/directslave/ssl/server.crt:ro
-  - ./ssl/server.key:/usr/local/directslave/ssl/server.key:ro
+docker run -d \
+  --name directslave \
+  -e CERTBOT_ENABLED="false" \
+  -v ./ssl/server.crt:/usr/local/directslave/ssl/server.crt:ro \
+  -v ./ssl/server.key:/usr/local/directslave/ssl/server.key:ro \
+  ... # other flags as above
+  ghcr.io/sq4ind/dockerized-directslave:latest
 ```
 
 See [docs/SSL_SETUP.md](docs/SSL_SETUP.md) for detailed SSL documentation.
-
-## DirectAdmin Integration
-
-### On DirectAdmin Server
-
-1. Enable MultiServer feature in DirectAdmin
-2. Navigate to: **Server Manager** → **Multi Server Setup**
-3. Add new server with:
-   - **IP**: Your DirectSlave server IP
-   - **Port**: 2222 (or 2224 for HTTPS)
-   - **Username**: admin (or custom)
-   - **Password**: Password you set with `--password`
-4. Test connection
-
-### Test Connection
-
-```bash
-# From DirectAdmin, test connection should show:
-# "DirectSlave GO/3.x connection OK"
-```
-
-See [docs/DIRECTADMIN_SETUP.md](docs/DIRECTADMIN_SETUP.md) for detailed setup guide.
 
 ## Common Operations
 
@@ -314,7 +272,7 @@ docker exec directslave /usr/local/bin/validate-config.sh
 # Add or update user
 docker exec -it directslave /usr/local/directslave/bin/directslave --password username:password
 
-# View current users (if supported)
+# View current users
 docker exec directslave cat /usr/local/directslave/etc/passwd
 ```
 
@@ -331,11 +289,11 @@ docker exec directslave rndc status
 dig @localhost example.com
 ```
 
-### Restart Services
+### Restart / Reload
 
 ```bash
-# Restart container (recommended)
-docker-compose restart
+# Restart container
+docker restart directslave
 
 # Reload BIND only
 docker exec directslave rndc reload
@@ -380,7 +338,6 @@ docker run --rm \
 ### Restore Data
 
 ```bash
-# Restore from backup
 docker run --rm \
   -v directslave_config:/config \
   -v directslave_logs:/logs \
@@ -448,31 +405,14 @@ docker exec directslave /usr/local/bin/validate-config.sh
 
 **Problem**: Permission denied errors
 
-**Solutions**:
 ```bash
 # Fix permissions inside container
 docker exec directslave chown -R bind:bind /usr/local/directslave
 docker exec directslave chown -R bind:bind /etc/namedb/secondary
 
 # Restart container
-docker-compose restart
+docker restart directslave
 ```
-
-### High Memory Usage
-
-**Solutions**:
-```bash
-# Check processes
-docker exec directslave ps aux --sort=-%mem
-
-# Set memory limits in docker-compose.yml
-deploy:
-  resources:
-    limits:
-      memory: 512M
-```
-
-See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for more detailed troubleshooting guide.
 
 ## Security Considerations
 
@@ -508,221 +448,21 @@ iptables -A INPUT -p tcp --dport 2224 -j DROP
 ### Environment File Security
 
 ```bash
-# Ensure .env is not in version control
-echo ".env" >> .gitignore
-
-# Set restrictive permissions
+# Set restrictive permissions on any env file
 chmod 600 .env
 
-# Never commit sensitive values
+# Never commit sensitive values to version control
 ```
 
 ### Third-Party Software Notice
 
 This project downloads and packages DirectSlave (BSD License, copyright Roman Mazur, 2012-2022) from https://directslave.com. We verify binary integrity via MD5 checksum but do **not** take responsibility for DirectSlave's security or functionality. See the [Disclaimer](#disclaimer---third-party-software) section for details.
 
-## Upgrading
-
-### DirectSlave Version Management
-
-DirectSlave version is controlled via build arguments in `docker-compose.yml`. The default version is **3.5.1**.
-
-#### Check Current Version
-
-```bash
-# Check build arguments in docker-compose.yml
-grep -A 5 "DIRECTSLAVE_VERSION" docker-compose.yml
-
-# Or check during container build logs
-docker logs directslave | grep "DirectSlave.*installation completed"
-```
-
-#### Upgrade to New DirectSlave Version
-
-**Step 1**: Find the new version
-
-Visit [DirectSlave Downloads](https://directslave.com/download) and note:
-- Version number (e.g., `3.6.0`)
-- Variant (e.g., `advanced-all`)
-- MD5 checksum (for security verification)
-
-**Step 2**: Update `docker-compose.yml`
-
-Edit the build args section:
-
-```yaml
-build:
-  context: .
-  dockerfile: Dockerfile
-  args:
-    DIRECTSLAVE_VERSION: "3.6.0"          # New version
-    DIRECTSLAVE_VARIANT: "advanced-all"   # Variant
-    DIRECTSLAVE_MD5: "abc123..."          # MD5 from download page
-```
-
-**Step 3**: Rebuild and restart
-
-```bash
-# Stop current container
-docker-compose down
-
-# Rebuild with new version (no-cache ensures fresh download)
-docker-compose build --no-cache
-
-# Start with new version
-docker-compose up -d
-
-# Verify new version installed
-docker logs directslave | grep "DirectSlave.*installation completed"
-```
-
-**Note**: Your configuration, zones, and certificates are preserved in volumes during upgrades.
-
-#### Version Pinning
-
-The current setup pins DirectSlave to a specific version (default: 3.5.1). This ensures:
-- ✅ **Reproducible builds** - Same version every time
-- ✅ **No surprises** - Explicit version control
-- ✅ **Testable** - Can test specific versions before deploying
-- ✅ **Rollback capability** - Can revert to previous version if needed
-
-#### Alternative: Build from Command Line
-
-You can override versions without editing docker-compose.yml:
-
-```bash
-docker-compose build \
-  --build-arg DIRECTSLAVE_VERSION=3.6.0 \
-  --build-arg DIRECTSLAVE_VARIANT=advanced-all \
-  --build-arg DIRECTSLAVE_MD5=abc123...
-```
-
-#### MD5 Verification
-
-MD5 checksum verification is **highly recommended** for security:
-
-- Ensures downloaded file hasn't been tampered with
-- Prevents installation of corrupted files
-- Build fails safely if checksum doesn't match
-
-**Find MD5**: Visit https://directslave.com/download and copy the MD5 hash for your version.
-
-**Skip verification** (not recommended): Set `DIRECTSLAVE_MD5: ""` (empty string)
-
-#### Rollback to Previous Version
-
-If a new version has issues:
-
-```bash
-# Edit docker-compose.yml back to previous version
-# DIRECTSLAVE_VERSION: "3.5.1"
-
-# Rebuild
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
-```
-
-### Upgrade Docker Base Image
-
-To update Alpine Linux and system packages:
-
-```bash
-# Pull latest Alpine base
-docker pull alpine:latest
-
-# Rebuild (picks up latest packages)
-docker-compose build --no-cache
-
-# Restart
-docker-compose down
-docker-compose up -d
-```
-
-### Version Documentation
-
-For detailed version configuration, see `.build-args.example` file.
-
-## Performance Tuning
-
-### For High Traffic
-
-Edit `docker-compose.yml`:
-
-```yaml
-deploy:
-  resources:
-    limits:
-      cpus: '2.0'
-      memory: 1G
-    reservations:
-      cpus: '1.0'
-      memory: 512M
-```
-
-### For Production DNS
-
-Consider using **host network mode** for better DNS performance:
-
-```yaml
-services:
-  directslave:
-    network_mode: "host"
-    # Remove ports section when using host mode
-```
-
-**Note**: Host mode reduces isolation but improves DNS query performance.
-
-## CI/CD & Docker Image
-
-### Automated Testing
-
-Every push and pull request triggers the CI pipeline:
-- **Hadolint** - Dockerfile best practices validation
-- **ShellCheck** - Shell script quality and security checks
-- **Trivy** - Container vulnerability scanning (CRITICAL/HIGH)
-- **Build verification** - Multi-platform Docker build (amd64 + arm64)
-
-Weekly scheduled scans ensure ongoing security compliance.
-
-### Pre-built Docker Image
-
-Multi-platform images are published to GitHub Container Registry on every release:
-
-```bash
-# Pull the latest release
-docker pull ghcr.io/sq4ind/dockerized-directslave:latest
-
-# Pull a specific version
-docker pull ghcr.io/sq4ind/dockerized-directslave:1.0.0
-```
-
-Supported platforms: `linux/amd64`, `linux/arm64`
-
-### Creating a Release
-
-```bash
-# Tag and push (CI must pass first)
-git tag -a v1.0.0 -m "Release 1.0.0"
-git push origin v1.0.0
-```
-
-Then create a GitHub Release matching the tag. The publish workflow automatically builds and pushes the multi-platform image to GHCR.
-
-### Security & Dependency Updates
-
-- **Dependabot** monitors Alpine base image and GitHub Actions weekly
-- Patch/minor security updates are auto-merged after CI passes
-- Major version upgrades require manual review
-- See [.github/SECURITY.md](.github/SECURITY.md) for full security policy
-
----
-
 ## Support & Contributing
 
 ### Getting Help
 
-- Check [TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
+- Check [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)
 - Review DirectSlave logs
 - Check Docker container logs
 - Validate configuration
@@ -731,10 +471,9 @@ Then create a GitHub Release matching the tag. The publish workflow automaticall
 
 When reporting issues, include:
 1. Docker version: `docker --version`
-2. Docker Compose version: `docker-compose --version`
-3. Container logs: `docker logs directslave`
-4. Configuration (sanitized - remove sensitive data)
-5. Error messages
+2. Container logs: `docker logs directslave`
+3. Configuration (sanitized - remove sensitive data)
+4. Error messages
 
 ### Contributing
 
@@ -744,6 +483,16 @@ Contributions are welcome! Please:
 3. Make your changes
 4. Test thoroughly
 5. Submit a pull request
+
+See [DEVELOPER.md](DEVELOPER.md) for build instructions and development workflow.
+
+## For Developers
+
+See [DEVELOPER.md](DEVELOPER.md) for:
+- Building the Docker image locally
+- DirectSlave version management & upgrading
+- Performance tuning
+- CI/CD pipeline details
 
 ## License
 
@@ -810,8 +559,3 @@ See [.github/SECURITY.md](.github/SECURITY.md) for full security policy.
 - [BIND Documentation](https://www.isc.org/bind/)
 - [Certbot Documentation](https://certbot.eff.org/)
 - [Docker Documentation](https://docs.docker.com/)
-
----
-
-**Version**: 1.0  
-**Last Updated**: 2026-05-13
