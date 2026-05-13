@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Lint Dockerfile with Hadolint
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: Dockerfile
           # Treat warnings as info, fail only on errors
