@@ -322,7 +322,7 @@ shutdown() {
     # Stop DirectSlave
     if [ -f "/usr/local/directslave/run/directslave.pid" ]; then
         log_info "Stopping DirectSlave..."
-        kill $(cat /usr/local/directslave/run/directslave.pid) 2>/dev/null || true
+        kill "$(cat /usr/local/directslave/run/directslave.pid)" 2>/dev/null || true
     fi
     
     # Stop BIND
