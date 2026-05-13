@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 ###########################################
 # Configuration Validation Script
 # Validates DirectSlave configuration
@@ -99,7 +99,7 @@ fi
 
 # Check BIND/named
 echo -n "  Checking BIND... "
-if ! command -v named &> /dev/null; then
+if ! command -v named > /dev/null 2>&1; then
     echo -e "${RED}FAILED${NC}"
     echo -e "    ${RED}ERROR:${NC} BIND (named) is not installed"
     ERRORS=$((ERRORS + 1))
@@ -109,7 +109,7 @@ fi
 
 # Check rndc
 echo -n "  Checking rndc... "
-if ! command -v rndc &> /dev/null; then
+if ! command -v rndc > /dev/null 2>&1; then
     echo -e "${YELLOW}WARNING${NC}"
     echo -e "    ${YELLOW}WARNING:${NC} rndc is not installed (zone reloading may not work)"
     WARNINGS=$((WARNINGS + 1))
