@@ -11,6 +11,9 @@ ssl ${DS_SSL}
 ssl_cert ${SSL_CERT_PATH}
 ssl_key ${SSL_KEY_PATH}
 
+# Debug mode (required by DirectSlave config parser)
+debug 1
+
 # Session and authentication
 cookie_sess_id DS_SESSID
 cookie_auth_key ${DS_AUTH_KEY}
