@@ -1,6 +1,9 @@
 # DirectSlave Configuration File
 # Generated from environment variables via Docker
 
+# Daemon settings (0 = foreground, managed via --debug flag)
+background 0
+
 # Network binding
 host ${DS_HOST}
 port ${DS_PORT}
