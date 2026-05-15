@@ -43,6 +43,7 @@ DirectAdmin's MultiServer feature allows you to automatically replicate DNS zone
 - Admin or reseller access
 - MultiServer feature available (most licenses include it)
 - Network connectivity to DirectSlave server
+- Firewall properly configured (if using CSF, ensure it allows outbound connections to DirectSlave)
 
 ### On DirectSlave Server
 
@@ -58,6 +59,7 @@ DirectAdmin's MultiServer feature allows you to automatically replicate DNS zone
 - DirectAdmin server can reach DirectSlave ports (2222/2224)
 - Internet users can reach DirectSlave DNS port (53)
 - Firewall allows required ports
+- If CSF (ConfigServer Firewall) is used on the DirectAdmin server, it must allow outbound connections to the DirectSlave IP on ports 2222/2224
 
 ## DirectSlave Setup
 
@@ -385,6 +387,44 @@ Monitor DirectSlave availability:
    ping DIRECTSLAVE_IP
    traceroute DIRECTSLAVE_IP
    ```
+
+### CSF Firewall Blocking Connection
+
+**Error in DirectAdmin**: "Unable to connect to X.X.X.X: Connection refused"
+
+**Symptoms:**
+- DirectAdmin MultiServer "Test Connection" fails with "Connection refused"
+- `curl` from the same DirectAdmin server to DirectSlave works fine
+- DirectSlave is confirmed running and accessible
+
+**Possible cause:**
+
+CSF (ConfigServer Firewall) on the DirectAdmin server is blocking outbound connections to DirectSlave. This can occur even when `curl` works from command line, because:
+
+- `curl` may run as root (unrestricted by CSF)
+- DirectAdmin process may be restricted by CSF outbound rules
+- CSF outbound rules need explicit whitelist for remote server IPs/ports
+
+**Solutions:**
+
+1. **Check if CSF is running** (on DirectAdmin server):
+   ```bash
+   csf -l
+   ```
+
+2. **Verify CSF blocked the connection** (on DirectAdmin server):
+   ```bash
+   tail -f /var/log/lfd.log | grep "DENY"
+   # Look for blocked connections to DirectSlave IP
+   ```
+
+3. **Whitelist DirectSlave IP in CSF** (on DirectAdmin server):
+   - Edit: `/etc/csf/csf.conf`
+   - Find: `TCP_OUT` and `UDP_OUT` settings
+   - Add DirectSlave IP to allowed outbound destinations
+   - Restart CSF: `csf -r`
+
+Refer to CSF documentation for specific whitelist syntax if needed.
 
 ### Authentication Failed
 

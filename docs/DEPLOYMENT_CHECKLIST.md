@@ -15,6 +15,7 @@ Use this checklist to ensure proper deployment of DirectSlave Docker.
 - [ ] Port 53 (DNS) open to public
 - [ ] Port 80 (HTTP) open to public (for Let's Encrypt)
 - [ ] Port 2222 or 2224 accessible from DirectAdmin server
+- [ ] CSF/firewall on DirectAdmin server allows outbound to DirectSlave IP and ports
 - [ ] Firewall configured
 
 ### DirectAdmin Requirements
