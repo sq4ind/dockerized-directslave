@@ -91,6 +91,40 @@ See [docs/DOCKER_COMPOSE_NETWORKING.md](docs/DOCKER_COMPOSE_NETWORKING.md) for a
 - Domain name pointing to your server
 - Ports 53 (DNS), 80 (HTTP/Let's Encrypt), 2222, 2224 accessible
 
+### Host System Requirements
+
+**IMPORTANT**: This container runs BIND DNS server internally and requires exclusive access to DNS ports.
+
+**If your host already has BIND (or another DNS server) installed:**
+
+The container will fail to start or rndc zone reloads will not work if ports 53 or 953 are already in use on the host. You must stop the host's BIND service before running this container:
+
+```bash
+sudo systemctl stop bind9
+sudo systemctl disable bind9  # Prevent auto-start on reboot
+```
+
+Alternatively:
+- Use bridge networking mode instead of host networking (see [Networking Guide](docs/DOCKER_COMPOSE_NETWORKING.md))
+- Run the container on a dedicated host without a local DNS server
+
+**Checking for port conflicts:**
+
+```bash
+sudo ss -tlnp | grep -E ':(53|953) '
+```
+
+If this shows any output, those services must be stopped before starting the container.
+
+**Required free ports:**
+| Port | Protocol | Purpose |
+|------|----------|---------|
+| 53 | UDP/TCP | DNS queries |
+| 953 | TCP | BIND rndc control (internal, used by DirectSlave for zone reloads) |
+| 80 | TCP | Let's Encrypt HTTP-01 validation (only if Certbot enabled) |
+| 2222 | TCP | DirectSlave HTTP API |
+| 2224 | TCP | DirectSlave HTTPS API |
+
 ### 1. Generate Auth Key
 
 ```bash
