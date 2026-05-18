@@ -167,7 +167,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Download SBOM artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: sbom
 
