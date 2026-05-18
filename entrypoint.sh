@@ -245,31 +245,6 @@ if [ ! -f "/etc/bind/named.conf" ]; then
     sed -i 's|directory "/var/bind"|directory "/etc/namedb/secondary"|' /etc/bind/named.conf
 fi
 
-###########################################
-# Create rndc client configuration
-###########################################
-log_info "Creating rndc client configuration..."
-
-if [ -f "/etc/bind/rndc.key" ]; then
-    cat /etc/bind/rndc.key > /etc/rndc.conf
-
-    cat >> /etc/rndc.conf << 'RNDC_OPTIONS_EOF'
-
-options {
-	default-key "rndc-key";
-	default-server 127.0.0.1;
-	default-port 9953;
-};
-RNDC_OPTIONS_EOF
-
-    chown root:bind /etc/rndc.conf
-    chmod 640 /etc/rndc.conf
-
-    log_info "rndc client configuration created: /etc/rndc.conf (port 9953)"
-else
-    log_warn "Warning: /etc/bind/rndc.key not found, skipping rndc.conf creation"
-fi
-
 # Add rndc key include if not already present
 if ! grep -q 'include "/etc/bind/rndc.key"' /etc/bind/named.conf 2>/dev/null; then
     log_info "Adding rndc key include to BIND configuration..."
@@ -279,7 +254,7 @@ fi
 # Add controls block if not already present
 if ! grep -q 'controls {' /etc/bind/named.conf 2>/dev/null; then
     log_info "Adding controls block to BIND configuration..."
-    printf '\ncontrols {\n    inet 127.0.0.1 port 9953 allow { 127.0.0.1; } keys { "rndc-key"; };\n};\n' >> /etc/bind/named.conf
+    printf '\ncontrols {\n    inet 127.0.0.1 port 953 allow { localhost; } keys { "rndc-key"; };\n};\n' >> /etc/bind/named.conf
 fi
 
 # Add DirectSlave zones include if not already present
@@ -331,19 +306,6 @@ if ! kill -0 $NAMED_PID 2>/dev/null; then
 fi
 
 log_info "BIND started successfully (PID: $NAMED_PID)"
-
-# Wait for BIND to fully initialize the control socket
-sleep 2
-
-# Test rndc connectivity to verify port 9953 and key are working
-log_info "Testing rndc connectivity..."
-if rndc status > /dev/null 2>&1; then
-    log_info "rndc connectivity test PASSED - zone auto-reload will work"
-else
-    log_warn "rndc connectivity test FAILED"
-    log_warn "rndc might not work, but zones can still reload via SIGHUP signal"
-    log_warn "Check if BIND is listening on 127.0.0.1:9953"
-fi
 
 # Wait a bit more for BIND to fully initialize
 sleep 3
