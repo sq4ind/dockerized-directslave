@@ -16,7 +16,7 @@ ARG DIRECTSLAVE_MD5=""
 # Downloads, verifies, and extracts DirectSlave binary
 # This stage is discarded - only artifacts are kept
 # ============================================================
-FROM alpine:3.23 AS builder
+FROM alpine:3.24 AS builder
 
 # Use ash with pipefail to catch pipe errors (fixes DL4006, SC3009)
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
@@ -73,7 +73,7 @@ RUN DOWNLOAD_URL="${DIRECTSLAVE_BASE_URL}/directslave-${DIRECTSLAVE_VERSION}-${D
 # STAGE 2: RUNTIME
 # Lean production image with only necessary packages
 # ============================================================
-FROM alpine:3.23
+FROM alpine:3.24
 
 # Use ash with pipefail to catch pipe errors (fixes DL4006, SC3009)
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
